@@ -68,6 +68,22 @@ def test_cooling_blocks_group_hours():
     assert blocks[1]["in_peak"] and not blocks[0]["in_peak"]
 
 
+
+def test_plan_strip_marks_cooling_and_spikes():
+    from datetime import datetime, timedelta
+    from coolhead import ui
+    times = [datetime(2020, 1, 4) + timedelta(hours=h) for h in range(24)]
+    prices = [30] * 18 + [1486] + [30] * 5
+    html = ui.plan_strip(times, [h in (9, 18) for h in range(24)], prices)
+    assert html.count("ch-h c1") == 1          # cheap cooling hour
+    assert html.count("ch-h c3 pk") == 1       # cooling during a price spike, in the peak
+
+
+def test_text_message_escapes_names():
+    from coolhead import ui
+    assert "<b>" not in ui.text_message("hi", "<b>Dad</b>")
+
+
 if __name__ == "__main__":
     for name, fn in list(globals().items()):
         if name.startswith("test_"):
