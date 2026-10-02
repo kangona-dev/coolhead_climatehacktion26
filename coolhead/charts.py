@@ -5,13 +5,13 @@ matplotlib.use("Agg")
 import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
 
-NAVY, PANEL, LINE, TEXT, MUTED = "#0E1B2B", "#15263A", "#26405C", "#E8EEF5", "#93A7BD"
+PANEL, LINE, TEXT, MUTED = "#FFFFFF", "#D5DFEA", "#12263A", "#5B6F84"
 
 COLOURS = {
-    "Outdoor": MUTED,
-    "Room – no cooling": "#FF5A4E",
-    "Room – usual thermostat": "#B39DDB",
-    "Room – CoolHead": "#7FD1F5",
+    "Outdoor": "#7A8A9B",
+    "Room – no cooling": "#E5483D",
+    "Room – usual thermostat": "#8E7CC3",
+    "Room – CoolHead": "#1B8CC4",
 }
 
 
@@ -22,9 +22,9 @@ def room_chart(times, series, band_max):
     ax.set_facecolor(PANEL)
     lo = min(min(v) for v in series.values()) - 2
     hi = max(max(v) for v in series.values()) + 2
-    ax.axhspan(lo, band_max, color="#4FD1A5", alpha=0.10, lw=0)
-    ax.axhline(band_max, color="#4FD1A5", lw=1.2, ls="--")
-    ax.text(times[0], band_max + 0.5, f" brain-safe limit {band_max}°C ", color="#4FD1A5",
+    ax.axhspan(lo, band_max, color="#1F9D74", alpha=0.08, lw=0)
+    ax.axhline(band_max, color="#1F9D74", lw=1.2, ls="--")
+    ax.text(times[0], band_max + 0.5, f" brain-safe limit {band_max}°C ", color="#1F9D74",
             fontsize=9, ha="left", va="bottom", zorder=1,
             bbox=dict(facecolor=PANEL, edgecolor="none", pad=1.5))
     for name, values in series.items():

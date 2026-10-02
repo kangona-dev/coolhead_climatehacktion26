@@ -5,8 +5,9 @@ from html import escape
 
 from coolhead.model import PEAK_HOURS
 
-NAVY, PANEL, LINE, TEXT, MUTED = "#0E1B2B", "#15263A", "#26405C", "#E8EEF5", "#93A7BD"
-ICE, HEAT, AMBER, SAFE = "#7FD1F5", "#FF5A4E", "#FFB547", "#4FD1A5"
+# Light "weather instrument" palette. Colour only ever means temperature or price.
+BG, PANEL, LINE, TEXT, MUTED = "#EEF3F8", "#FFFFFF", "#D5DFEA", "#12263A", "#5B6F84"
+COOL, HEAT, AMBER, SAFE, OFF = "#1B8CC4", "#E5483D", "#E89A1C", "#1F9D74", "#E3EAF2"
 
 CSS = f"""
 <style>
@@ -15,53 +16,52 @@ html, body, [class*="css"], .stMarkdown, p, li, label, td, th {{ font-family: 'I
 h1, h2, h3, .ch-num {{ font-family: 'Space Grotesk', sans-serif !important; letter-spacing: -0.01em; }}
 #MainMenu, footer {{ visibility: hidden; }}
 .block-container {{ padding-top: 2.2rem; max-width: 860px; }}
-h2 {{ font-size: 1.35rem !important; margin-top: 2.2rem !important; }}
+h2 {{ font-size: 1.35rem !important; margin-top: 2rem !important; color: {TEXT}; }}
 
 .ch-hero h1 {{ font-size: 2.6rem; margin: 0 0 .2rem 0; color: {TEXT}; }}
-.ch-hero h1 span {{ color: {ICE}; }}
+.ch-hero h1 span {{ color: {COOL}; }}
 .ch-hero p {{ color: {MUTED}; font-size: 1.05rem; margin: 0 0 1rem 0; max-width: 62ch; }}
 
-.ch-panel {{ background: {PANEL}; border: 1px solid {LINE}; border-radius: 14px; padding: 1.2rem 1.4rem; }}
-.ch-scene {{ color: {MUTED}; font-size: .92rem; margin-bottom: 1rem; }}
+.ch-panel {{ background: {PANEL}; border: 1px solid {LINE}; border-radius: 14px; padding: 1.2rem 1.4rem;
+            box-shadow: 0 1px 2px rgba(18,38,58,.06); }}
+.ch-scene {{ color: {MUTED}; font-size: .92rem; margin-bottom: 1.1rem; }}
 .ch-scene b {{ color: {TEXT}; font-weight: 600; }}
 
-/* thermal scale bar */
-.ch-scale {{ position: relative; height: 128px; margin: 0 .4rem; }}
-.ch-bar {{ position: absolute; top: 54px; left: 0; right: 0; height: 18px; border-radius: 9px;
-          background: linear-gradient(90deg, #2B6CB0 0%, {ICE} 22%, {SAFE} 34%, {AMBER} 58%, {HEAT} 82%, #B3123A 100%); }}
-.ch-mark {{ position: absolute; transform: translateX(-50%); text-align: center; white-space: nowrap; font-size: .8rem; color: {MUTED}; }}
-.ch-mark b {{ display: block; font-family: 'Space Grotesk', sans-serif; font-size: 1.15rem; color: {TEXT}; }}
-.ch-tick {{ position: absolute; top: 48px; width: 2px; height: 30px; background: {TEXT}; transform: translateX(-1px); border-radius: 1px; }}
-.ch-limit {{ position: absolute; top: 44px; height: 38px; border-left: 2px dashed {TEXT}; }}
+/* thermal scale bar: markers sit ON the bar, numbers sit in a row BELOW it (never overlap) */
+.ch-scale {{ position: relative; height: 26px; margin: 0 .5rem; }}
+.ch-bar {{ position: absolute; top: 6px; left: 0; right: 0; height: 14px; border-radius: 7px;
+          background: linear-gradient(90deg, #2B6CB0 0%, #5BC0EB 22%, #3DBF8F 34%, #F2B33D 58%, #E5483D 82%, #A3122F 100%); }}
+.ch-dot {{ position: absolute; top: 2px; width: 22px; height: 22px; margin-left: -11px; border-radius: 50%;
+          background: {PANEL}; border: 4px solid; box-shadow: 0 1px 3px rgba(0,0,0,.25); }}
+.ch-limit {{ position: absolute; top: -4px; height: 34px; border-left: 2px dashed {TEXT}; }}
+.ch-ends {{ display: flex; justify-content: space-between; color: {MUTED}; font-size: .72rem; margin: .3rem .5rem 0 .5rem; }}
+.ch-legend {{ display: grid; grid-template-columns: repeat(4, 1fr); gap: .6rem; margin-top: 1rem; }}
+.ch-leg b {{ display: block; font-family: 'Space Grotesk', sans-serif; font-size: 1.4rem; color: {TEXT}; }}
+.ch-leg span {{ color: {MUTED}; font-size: .82rem; }}
+.ch-leg i {{ display: inline-block; width: 11px; height: 11px; border-radius: 50%; border: 3px solid;
+            margin-right: .35rem; vertical-align: -2px; }}
+.ch-leg i.lim {{ border: none; border-left: 2px dashed {TEXT}; border-radius: 0; width: 2px; height: 14px; margin-right: .5rem; }}
 
 /* outcome row */
-.ch-stats {{ display: grid; grid-template-columns: repeat(4, 1fr); margin-top: 1rem; border-top: 1px solid {LINE}; }}
-.ch-stat {{ padding: .9rem .6rem 0 .6rem; border-left: 1px solid {LINE}; }}
+.ch-stats {{ display: grid; grid-template-columns: repeat(4, 1fr); margin-top: 1.1rem; border-top: 1px solid {LINE}; }}
+.ch-stat {{ padding: .9rem .6rem 0 .8rem; border-left: 1px solid {LINE}; }}
 .ch-stat:first-child {{ border-left: none; padding-left: 0; }}
-.ch-stat .ch-num {{ font-size: 1.5rem; color: {TEXT}; display: block; }}
+.ch-stat .ch-num {{ font-size: 1.45rem; color: {TEXT}; display: block; }}
 .ch-stat small {{ color: {MUTED}; font-size: .8rem; line-height: 1.35; display: block; }}
 .ch-good {{ color: {SAFE} !important; }}
-@media (max-width: 640px) {{
-  .ch-hero h1 {{ font-size: 2.1rem; }}
-  .ch-plan {{ grid-template-columns: 58px 1fr; }}
-  .ch-day {{ font-size: .78rem; }}
-  .ch-fix {{ grid-template-columns: 1fr 1fr 44px; }}
-  .ch-stats {{ grid-template-columns: repeat(2, 1fr); }}
-  .ch-stat:nth-child(3) {{ border-left: none; padding-left: 0; }}
-}}
 
 /* text message */
 .ch-phone {{ max-width: 460px; }}
 .ch-from {{ color: {MUTED}; font-size: .8rem; margin: 0 0 .3rem .2rem; }}
-.ch-bubble {{ background: #1F4E79; color: {TEXT}; padding: .8rem 1rem; border-radius: 18px 18px 18px 4px; line-height: 1.5; }}
+.ch-bubble {{ background: {COOL}; color: #FFFFFF; padding: .8rem 1rem; border-radius: 18px 18px 18px 4px; line-height: 1.5; }}
 
 /* plan strip */
 .ch-plan {{ display: grid; grid-template-columns: 88px 1fr; gap: .45rem .8rem; align-items: center; }}
 .ch-day {{ color: {TEXT}; font-size: .9rem; }}
 .ch-hours {{ display: grid; grid-template-columns: repeat(24, 1fr); gap: 2px; }}
-.ch-h {{ height: 26px; border-radius: 3px; background: #1C3048; }}
-.ch-h.pk {{ box-shadow: inset 0 -4px 0 rgba(232,238,245,.7); }}
-.ch-h.c1 {{ background: {ICE}; }} .ch-h.c2 {{ background: {AMBER}; }} .ch-h.c3 {{ background: {HEAT}; }}
+.ch-h {{ height: 26px; border-radius: 3px; background: {OFF}; }}
+.ch-h.pk {{ box-shadow: inset 0 -4px 0 rgba(18,38,58,.55); }}
+.ch-h.c1 {{ background: {COOL}; }} .ch-h.c2 {{ background: {AMBER}; }} .ch-h.c3 {{ background: {HEAT}; }}
 .ch-axis {{ display: grid; grid-template-columns: repeat(4, 1fr); color: {MUTED}; font-size: .72rem; margin-top: .2rem; }}
 .ch-key {{ display: flex; flex-wrap: wrap; gap: .4rem 1.2rem; color: {MUTED}; font-size: .8rem; margin-top: .9rem; }}
 .ch-key i {{ display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-right: .35rem; vertical-align: -1px; }}
@@ -69,27 +69,40 @@ h2 {{ font-size: 1.35rem !important; margin-top: 2.2rem !important; }}
 /* fixes */
 .ch-fix {{ display: grid; grid-template-columns: minmax(150px, 1.2fr) 2fr 52px; gap: .8rem; align-items: center; margin: .55rem 0; }}
 .ch-fix span {{ color: {TEXT}; font-size: .92rem; }}
-.ch-track {{ background: #1C3048; border-radius: 6px; height: 12px; }}
-.ch-fill {{ background: {ICE}; border-radius: 6px; height: 12px; }}
+.ch-track {{ background: {OFF}; border-radius: 6px; height: 12px; }}
+.ch-fill {{ background: {COOL}; border-radius: 6px; height: 12px; }}
 .ch-fix b {{ font-family: 'Space Grotesk', sans-serif; color: {TEXT}; text-align: right; }}
-.ch-note {{ color: {MUTED}; font-size: .82rem; }}
+.ch-note {{ color: {MUTED}; font-size: .82rem; margin-top: .3rem; }}
+
+@media (max-width: 640px) {{
+  .ch-hero h1 {{ font-size: 2.1rem; }}
+  .ch-legend, .ch-stats {{ grid-template-columns: repeat(2, 1fr); }}
+  .ch-stat:nth-child(3) {{ border-left: none; padding-left: 0; }}
+  .ch-plan {{ grid-template-columns: 58px 1fr; }}
+  .ch-day {{ font-size: .78rem; }}
+  .ch-fix {{ grid-template-columns: 1fr 1fr 44px; }}
+}}
 </style>
 """
 
+# marker colours on the scale (each also used as its legend swatch)
+M_PLAN, M_NONE, M_OUT = COOL, HEAT, "#7A8A9B"
+
 
 def hero(outdoor_peak, none_peak, plan_peak, band_max, place, period):
-    """Title + thermal scale bar with the four key temperatures."""
+    """Title + thermal scale bar. Opens a panel that outcome_row() closes."""
     lo = 18.0
     hi = max(50.0, outdoor_peak + 2, none_peak + 2)
 
     def pos(t):
         return max(0.0, min(100.0, 100 * (t - lo) / (hi - lo)))
 
-    def mark(t, label, top):
-        return (f'<div class="ch-mark" style="left:{pos(t):.1f}%;top:{top}px">'
-                f'<b>{t:.0f}°C</b>{escape(label)}</div>')
+    def dot(t, colour):
+        return f'<div class="ch-dot" style="left:{pos(t):.1f}%;border-color:{colour}"></div>'
 
-    # two label rows above and below the bar, so nearby values never overlap
+    def leg(t, label, swatch):
+        return f'<div class="ch-leg"><b>{t:.0f}°C</b><span>{swatch}{escape(label)}</span></div>'
+
     return f"""
 <div class="ch-hero">
   <h1>Cool<span>Head</span></h1>
@@ -101,12 +114,16 @@ def hero(outdoor_peak, none_peak, plan_peak, band_max, place, period):
   <div class="ch-scale">
     <div class="ch-bar"></div>
     <div class="ch-limit" style="left:{pos(band_max):.1f}%"></div>
-    <div class="ch-tick" style="left:{pos(plan_peak):.1f}%"></div>
-    <div class="ch-tick" style="left:{pos(none_peak):.1f}%"></div>
-    {mark(plan_peak, "room with CoolHead", 0)}
-    {mark(none_peak, "room without cooling", 0)}
-    {mark(band_max, "brain-safe limit", 84)}
-    {mark(outdoor_peak, "outdoors", 84)}
+    {dot(outdoor_peak, M_OUT)}
+    {dot(none_peak, M_NONE)}
+    {dot(plan_peak, M_PLAN)}
+  </div>
+  <div class="ch-ends"><span>{lo:.0f}°C</span><span>{hi:.0f}°C</span></div>
+  <div class="ch-legend">
+    {leg(plan_peak, "room with CoolHead", f'<i style="border-color:{M_PLAN}"></i>')}
+    {leg(band_max, "brain-safe limit", '<i class="lim"></i>')}
+    {leg(none_peak, "room without cooling", f'<i style="border-color:{M_NONE}"></i>')}
+    {leg(outdoor_peak, "outdoors", f'<i style="border-color:{M_OUT}"></i>')}
   </div>
 """
 
@@ -159,10 +176,11 @@ def plan_strip(times, ac_on, prices):
         rows.append(f'<div class="ch-day">{label}</div><div class="ch-hours">{"".join(cells)}</div>')
     axis = ('<div></div><div class="ch-axis"><span>12am</span><span>6am</span>'
             '<span>12pm</span><span>6pm</span></div>')
-    key = (f'<div class="ch-key"><span><i style="background:{ICE}"></i>cooling, cheap power</span>'
+    key = (f'<div class="ch-key"><span><i style="background:{COOL}"></i>cooling, cheap power</span>'
            f'<span><i style="background:{AMBER}"></i>cooling, normal price</span>'
            f'<span><i style="background:{HEAT}"></i>cooling during a price spike</span>'
-           f'<span><i style="background:#1C3048;box-shadow:inset 0 -3px 0 rgba(232,238,245,.7)"></i>underline: 4–9pm peak</span></div>')
+           f'<span><i style="background:{OFF};box-shadow:inset 0 -3px 0 rgba(18,38,58,.55)"></i>'
+           f'underline: 4–9pm peak</span></div>')
     return f'<div class="ch-panel"><div class="ch-plan">{"".join(rows)}{axis}</div>{key}</div>'
 
 
