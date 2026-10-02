@@ -1,4 +1,4 @@
-# CoolHead – step-by-step guide (for total beginners)
+# CoolHead
 
 > Every heat app tells you the temperature. **CoolHead simulates your room** and plans cooling
 > around your **brain-safe range**, at the cheapest, cleanest hour.
