@@ -199,6 +199,37 @@ def _clock(h):
     return f"{h % 12 or 12}{'am' if h < 12 else 'pm'}"
 
 
+def cooling_blocks(times, ac_on, prices, max_gap=1):
+    """Turn the hour-by-hour plan into readable blocks. Blocks on the same day
+    separated by <= max_gap off-hours are merged ("cycles on and off").
+    times: list of datetimes. Returns a list of dicts like
+    {"day": "Sat 4 Jan", "start": "9am", "end": "12pm", "hours": 3,
+     "avg_price": 30.0, "in_peak": False}"""
+    blocks, i, n = [], 0, len(ac_on)
+    while i < n:
+        if not ac_on[i]:
+            i += 1
+            continue
+        j = i
+        while True:
+            nxt = next((k for k in range(j + 1, min(n, j + 2 + max_gap)) if ac_on[k]), None)
+            if nxt is None or times[nxt].date() != times[i].date():
+                break
+            j = nxt
+        on_hours = [k for k in range(i, j + 1) if ac_on[k]]
+        block_prices = [prices[k] for k in on_hours]
+        blocks.append({
+            "day": f"{times[i]:%a} {times[i].day} {times[i]:%b}",
+            "start": _clock(times[i].hour),
+            "end": _clock(times[j].hour + 1),
+            "hours": len(on_hours),
+            "avg_price": sum(block_prices) / len(block_prices),
+            "in_peak": any(times[k].hour in PEAK_HOURS for k in on_hours),
+        })
+        i = j + 1
+    return blocks
+
+
 # Example time-of-use tariff (c/kWh). REPLACE with a real NSW retailer tariff
 # and cite it. Hours 15-20 peak, 7-14 & 21-21 shoulder, rest off-peak.
 def example_tou_price(hour):

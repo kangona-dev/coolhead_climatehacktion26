@@ -7,16 +7,27 @@ import streamlit as st
 
 from coolhead.model import (ROOM_PRESETS, FIXES, simulate, plan_thermostat,
                             plan_coolhead, scorecard, carer_message,
-                            example_tou_price)
+                            example_tou_price, cooling_blocks)
 from coolhead import data
 
 st.set_page_config(page_title="CoolHead", page_icon="🧠", layout="centered")
 
 st.title("🧠 CoolHead")
 st.write("Every heat app tells you the temperature. **CoolHead simulates your room** "
-         "and plans cooling around your **brain-safe range**, at the cheapest, cleanest hour.")
+         "and plans cooling around your **brain-safe range**, at the cheapest hours, before the evening peak.")
 st.caption("COP31 priority: **Resilient Cities & Buildings** (supporting: Electrification). "
            "Not medical advice – set your safe range with your GP or pharmacist.")
+
+with st.expander("ℹ️ How CoolHead works (30-second version)"):
+    st.markdown(
+        "1. **Mini room simulation.** No sensor needed: from the weather forecast and the type of home, "
+        "CoolHead estimates how hot the room will get, hour by hour.\n"
+        "2. **Brain-safe band.** You set the upper temperature limit with your GP's advice. Heat affects "
+        "sleep, mood and thinking, especially for older people and people with dementia.\n"
+        "3. **Smart cooling plan.** CoolHead finds when the room would get too hot and pre-cools it "
+        "at the cheapest hours beforehand, instead of running the air-con flat out in the 4–9pm peak.\n"
+        "4. **Cool Room Fixes.** It tests cheap upgrades (blinds, draught sealing, insulation) so you can "
+        "see how much cooling energy each saves before you spend money.")
 
 # Profiles are STARTING POINTS the user adjusts. Do not present them as medical thresholds.
 PROFILES = {
@@ -76,6 +87,23 @@ t_plan = simulate(room, out, sun, plan)
 # ---- Carer text -------------------------------------------------------------
 st.subheader("📱 Today's message")
 st.success(carer_message(name, room_name, t_none, plan, prices, hours, band_max))
+
+# ---- The plan itself -----------------------------------------------------------
+st.subheader("🗓️ Cooling plan")
+blocks = cooling_blocks(list(w["time"]), plan, prices)
+if not blocks:
+    st.write("No cooling needed – the room stays inside the safe band.")
+else:
+    st.table(pd.DataFrame([{
+        "Day": b["day"],
+        "Cool from": b["start"],
+        "Until": b["end"],
+        "Air-con on for": f"{b['hours']} h",
+        "Power price": f"{b['avg_price']:.0f}c/kWh",
+        "When": "⚠️ evening peak" if b["in_peak"] else "✅ before the peak",
+    } for b in blocks]))
+    st.caption("Set the air-con to these times (or let a smart plug do it). "
+               "CoolHead runs it before the room gets too hot, not after.")
 
 # ---- Chart -------------------------------------------------------------------
 st.subheader("🌡️ How hot the room gets")

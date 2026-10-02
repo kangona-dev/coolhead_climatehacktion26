@@ -57,6 +57,17 @@ def test_cool_day_needs_no_ac():
     assert not any(plan)
 
 
+def test_cooling_blocks_group_hours():
+    from datetime import datetime, timedelta
+    from coolhead.model import cooling_blocks
+    times = [datetime(2020, 1, 4) + timedelta(hours=h) for h in range(24)]
+    ac_on = [9 <= h < 12 or h == 17 for h in range(24)]
+    blocks = cooling_blocks(times, ac_on, PRICES)
+    assert len(blocks) == 2
+    assert (blocks[0]["start"], blocks[0]["end"], blocks[0]["hours"]) == ("9am", "12pm", 3)
+    assert blocks[1]["in_peak"] and not blocks[0]["in_peak"]
+
+
 if __name__ == "__main__":
     for name, fn in list(globals().items()):
         if name.startswith("test_"):
