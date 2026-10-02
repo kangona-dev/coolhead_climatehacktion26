@@ -1,4 +1,4 @@
-# CoolHead
+# CoolHead – step-by-step guide (for total beginners)
 
 > Every heat app tells you the temperature. **CoolHead simulates your room** and plans cooling
 > around your **brain-safe range**, at the cheapest, cleanest hour.
@@ -39,16 +39,28 @@ Download from **code.visualstudio.com** and install it.
    This is where you type the commands below. Press Enter after each one.
 
 ### Step 4. Install the libraries
-```
-pip install -r requirements.txt
-```
-If `pip` isn't found, try `pip3 install -r requirements.txt` (Mac) or `py -m pip install -r requirements.txt` (Windows).
+First check you're in the right folder: type `dir` (Windows) or `ls` (Mac). You must see
+`requirements.txt` listed. If you only see another `coolhead` folder, type `cd coolhead` and check again.
 
-Also, wherever this guide says `python`, Mac users may need to type `python3` and Windows users `py`.
+**Windows:**
+```
+py -m pip install -r requirements.txt
+```
+**Mac:**
+```
+python3 -m pip install -r requirements.txt
+```
+
+> ⚠️ **Windows users: use `py` for EVERY command in this guide** (e.g. `py backtest.py`,
+> `py -m streamlit run app.py`). `python` and `py` can be two different Pythons, and only the
+> one you installed into has the libraries. Mac users: use `python3`.
+>
+> Type or paste **one command at a time**, never error text. If the line starts with `>>`,
+> press **Ctrl + C** to get back to the normal prompt.
 
 ### Step 5. Check everything works
 ```
-python tests/test_model.py
+py tests/test_model.py
 ```
 You should see 7 lines starting with `PASS`. 🎉 If so, your setup is done.
 
@@ -58,13 +70,13 @@ You should see 7 lines starting with `PASS`. 🎉 If so, your setup is done.
 
 ### Step 6. Try it with made-up data first (no internet needed)
 ```
-python backtest.py --demo
+py backtest.py --demo
 ```
 You'll see a table, and a chart is saved at `outputs/backtest_chart.png`. Open it.
 
 ### Step 7. Run it with REAL data
 ```
-python backtest.py
+py backtest.py
 ```
 This downloads the real Penrith weather for 3–5 January 2020 and real NSW electricity prices.
 - Check that the hottest outdoor temperature printed is close to 48–49°C. If not, change the
@@ -75,11 +87,12 @@ This downloads the real Penrith weather for 3–5 January 2020 and real NSW elec
 
 Try other room types:
 ```
-python backtest.py --room "Brick house"
-python backtest.py --room "Top-floor apartment"
+py backtest.py --room "Brick house"
+py backtest.py --room "Top-floor apartment"
 ```
 
 ### Step 8. Write down your numbers
+The script prints a **PITCH NUMBERS** box at the end with these worked out for you.
 From the table, the headline comparison is **"Usual: thermostat at limit" vs "CoolHead plan"**
 (both keep the person safe, so it's a fair comparison). Note:
 - Cooling cost $ saved
@@ -95,7 +108,7 @@ From the table, the headline comparison is **"Usual: thermostat at limit" vs "Co
 
 ### Step 9. Start the website on your laptop
 ```
-streamlit run app.py
+py -m streamlit run app.py
 ```
 A browser tab opens at `http://localhost:8501`. Change the suburb, profile and room in the left sidebar.
 To stop it, click the terminal and press **Ctrl + C**.
@@ -158,7 +171,8 @@ After any change to `model.py`, run `python tests/test_model.py` again to make s
 | Problem | Fix |
 |---|---|
 | `python` not found | Use `python3` (Mac) or `py` (Windows). On Windows, reinstall Python and tick "Add to PATH". |
-| `ModuleNotFoundError` | Run Step 4 again. |
-| `streamlit` not found | `python -m streamlit run app.py` |
+| `ModuleNotFoundError` | You're using a different Python than the one you installed into. On Windows use `py` for everything (`py backtest.py`). |
+| `streamlit` not found | `py -m streamlit run app.py` (Windows) or `python3 -m streamlit run app.py` (Mac) |
+| Lines start with `>>` / red parse errors | You pasted error text into the terminal. Press Ctrl + C and type just the command. |
 | Weather error in app | Check the suburb spelling and your internet. Saved copies in `data/` are used when offline. |
 | Anything else | Copy the **whole** red error message and paste it to Claude or a mentor. |

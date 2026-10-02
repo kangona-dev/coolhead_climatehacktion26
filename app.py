@@ -35,27 +35,31 @@ with st.sidebar:
     band_max = st.slider("Brain-safe upper limit (°C)", 22, 32, PROFILES[profile])
     st.caption("[NSW Health: beat the heat](https://www.health.nsw.gov.au/environment/beattheheat)")
     st.header("2. Their room")
-    room_name = st.selectbox("Room type", list(ROOM_PRESETS))
+    room_name = st.selectbox("Room type", list(ROOM_PRESETS), index=list(ROOM_PRESETS).index("Top-floor apartment"))
     st.header("3. Electricity")
-    price_mode = st.radio("Prices", ["Time-of-use tariff (example)", "Replay a real heatwave"])
+    price_mode = st.radio("What to show", ["Replay a real heatwave (Jan 2020)", "Live: next 48 hours"])
 
 room = ROOM_PRESETS[room_name]
 
 # ---- Get weather + prices --------------------------------------------------
 try:
     lat, lon, label = data.find_place(place)
-    if price_mode == "Replay a real heatwave":
+    if price_mode.startswith("Replay"):
         w = data.history(lat, lon, "2020-01-03", "2020-01-05")
         try:
             w = w.merge(data.aemo_prices(2020, 1), on="time", how="left")
             w["price_c"] = w["price_c"].ffill().bfill()
+            price_note = "real NSW electricity prices from that week"
         except Exception:
             w["price_c"] = [example_tou_price(t.hour) for t in w["time"]]
-        st.info(f"Replaying the January 2020 heatwave in {label}")
+            price_note = "an example time-of-use tariff"
+        st.info(f"Replaying the 3–5 January 2020 heatwave in {label} "
+                f"(hottest: {w['outdoor'].max():.0f}°C), with {price_note}.")
     else:
         w = data.forecast(lat, lon, days=2)
         w["price_c"] = [example_tou_price(t.hour) for t in w["time"]]
-        st.info(f"Next 48 hours in {label}")
+        st.info(f"Next 48 hours in {label} (hottest: {w['outdoor'].max():.0f}°C), "
+                "with an example time-of-use tariff.")
 except Exception as e:
     st.error(f"Couldn't get weather data ({e}). Check the suburb name or your internet.")
     st.stop()
@@ -75,17 +79,20 @@ st.success(carer_message(name, room_name, t_none, plan, prices, hours, band_max)
 
 # ---- Chart -------------------------------------------------------------------
 st.subheader("🌡️ How hot the room gets")
-chart = pd.DataFrame({"Outdoor": out, "Room – no cooling": t_none,
-                      "Room – usual thermostat": t_usual, "Room – CoolHead": t_plan},
+# columns kept in alphabetical order so each line gets the right colour
+chart = pd.DataFrame({"Outdoor": out, "Room – CoolHead": t_plan,
+                      "Room – no cooling": t_none, "Room – usual thermostat": t_usual},
                      index=w["time"])
-st.line_chart(chart)
+st.line_chart(chart, color=["#9e9e9e", "#1f77b4", "#d62728", "#9467bd"])
 
 # ---- Two sets of vital signs -------------------------------------------------
 left, right = st.columns(2)
 with left:
     st.markdown("**🧠 Person**")
+    drop = max(t_none) - max(t_plan)
     st.metric("Hottest room temp (CoolHead)", f"{max(t_plan):.1f}°C",
-              delta=f"{max(t_plan) - max(t_none):.1f}°C vs no cooling", delta_color="inverse")
+              delta=f"-{drop:.1f}°C vs no cooling" if drop >= 0.1 else None, delta_color="inverse")
+    st.metric("Hottest room temp (no cooling)", f"{max(t_none):.1f}°C")
 with right:
     st.markdown("**⚡ Grid**")
     st.metric("Cheapest hour", f"{min(prices):.0f}c/kWh")
@@ -95,10 +102,17 @@ with right:
 st.subheader("🌏 COP31 scorecard")
 s_usual = scorecard(room, t_usual, usual, prices, hours, band_max)
 s_plan = scorecard(room, t_plan, plan, prices, hours, band_max)
-st.table(pd.DataFrame({"Usual thermostat": s_usual, "CoolHead": s_plan}))
-saved_peak = s_usual["Evening-peak kWh"] - s_plan["Evening-peak kWh"]
-st.write(f"If **10,000** NSW households did this, that's about "
-         f"**{saved_peak * 10000 / 1000:,.0f} MWh** taken off the evening peak over this period.")
+FORMATS = {"Hours too hot": "{:.0f}", "Hottest indoor °C": "{:.1f}°C", "Cooling cost $": "${:.2f}",
+           "Cooling kWh": "{:.1f}", "Evening-peak kWh": "{:.1f}", "Solar-hours share %": "{:.0f}%"}
+st.table(pd.DataFrame({"Usual thermostat": {k: FORMATS[k].format(v) for k, v in s_usual.items()},
+                       "CoolHead": {k: FORMATS[k].format(v) for k, v in s_plan.items()}}))
+if s_usual["Cooling kWh"] == 0:
+    st.write("No cooling needed in this period. Try **Replay a real heatwave** or a hotter room type.")
+else:
+    saved_cost = s_usual["Cooling cost $"] - s_plan["Cooling cost $"]
+    saved_peak = s_usual["Evening-peak kWh"] - s_plan["Evening-peak kWh"]
+    st.write(f"Same safety, **${saved_cost:.2f} cheaper** and **{saved_peak:.1f} kWh less** in the evening peak. "
+             f"Across **10,000** NSW homes that's about **{saved_peak * 10000 / 1000:,.0f} MWh** off the evening peak.")
 
 # ---- Cool Room Fixes -----------------------------------------------------------
 st.subheader("🔧 Cool Room Fixes – test before you spend")
