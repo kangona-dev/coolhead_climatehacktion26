@@ -22,7 +22,7 @@ No sensor needed. CoolHead uses free public weather and electricity-price data.
 
 ---
 
-## PART A – Set up your laptop (≈30 min, do this first)
+## PART A – Set up your laptop
 
 ### Step 1. Install Python
 1. Go to **python.org/downloads** and download the latest Python 3.
