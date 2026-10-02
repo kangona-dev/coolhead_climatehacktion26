@@ -179,16 +179,18 @@ def scorecard(room, temps, ac_on, prices, hours_of_day, band_max):
     }
 
 
-def carer_message(name, room_name, temps_no_ac, ac_on, prices, hours_of_day, band_max):
-    """Plain-language text a carer could receive."""
+def carer_message(name, room_name, temps_no_ac, ac_on, prices, hours_of_day, band_max, times=None):
+    """Plain-language text a carer could receive. Pass `times` (datetimes) to name the day."""
+    def when(i):
+        return f"{times[i]:%A} {_clock(hours_of_day[i])}" if times is not None else _clock(hours_of_day[i])
     breach = next((i for i, t in enumerate(temps_no_ac) if t > band_max), None)
     if breach is None:
         return f"Good news: {name}'s {room_name.lower()} should stay under {band_max}°C today. No action needed."
     first_on = next((i for i, on in enumerate(ac_on) if on), None)
-    msg = (f"Heads up: {name}'s room will pass {band_max}°C at around "
-           f"{_clock(hours_of_day[breach])} if nothing changes.")
+    msg = (f"Heads up: {name}'s room will pass {band_max}°C around "
+           f"{when(breach)} if nothing changes.")
     if first_on is not None:
-        msg += (f" Start cooling at {_clock(hours_of_day[first_on])} while power is "
+        msg += (f" Start cooling at {when(first_on)} while power is "
                 f"{prices[first_on]:.0f}c/kWh, so it's already cool before the evening peak.")
     msg += " Keep water nearby and check in on them."
     return msg

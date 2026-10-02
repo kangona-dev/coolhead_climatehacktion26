@@ -8,6 +8,7 @@ import streamlit as st
 from coolhead.model import (ROOM_PRESETS, FIXES, simulate, plan_thermostat,
                             plan_coolhead, scorecard, carer_message,
                             example_tou_price, cooling_blocks)
+from coolhead.charts import room_chart
 from coolhead import data
 
 st.set_page_config(page_title="CoolHead", page_icon="🧠", layout="centered")
@@ -86,7 +87,7 @@ t_plan = simulate(room, out, sun, plan)
 
 # ---- Carer text -------------------------------------------------------------
 st.subheader("📱 Today's message")
-st.success(carer_message(name, room_name, t_none, plan, prices, hours, band_max))
+st.success(carer_message(name, room_name, t_none, plan, prices, hours, band_max, times=list(w["time"])))
 
 # ---- The plan itself -----------------------------------------------------------
 st.subheader("🗓️ Cooling plan")
@@ -107,11 +108,9 @@ else:
 
 # ---- Chart -------------------------------------------------------------------
 st.subheader("🌡️ How hot the room gets")
-# columns kept in alphabetical order so each line gets the right colour
-chart = pd.DataFrame({"Outdoor": out, "Room – CoolHead": t_plan,
-                      "Room – no cooling": t_none, "Room – usual thermostat": t_usual},
-                     index=w["time"])
-st.line_chart(chart, color=["#9e9e9e", "#1f77b4", "#d62728", "#9467bd"])
+st.pyplot(room_chart(list(w["time"]), {
+    "Outdoor": out, "Room – no cooling": t_none,
+    "Room – usual thermostat": t_usual, "Room – CoolHead": t_plan}, band_max))
 
 # ---- Two sets of vital signs -------------------------------------------------
 left, right = st.columns(2)
@@ -123,8 +122,13 @@ with left:
     st.metric("Hottest room temp (no cooling)", f"{max(t_none):.1f}°C")
 with right:
     st.markdown("**⚡ Grid**")
-    st.metric("Cheapest hour", f"{min(prices):.0f}c/kWh")
-    st.metric("Most expensive hour", f"{max(prices):.0f}c/kWh")
+    def price_text(c):
+        return f"${c / 100:.2f}/kWh" if c >= 100 else f"{c:.0f}c/kWh"
+    st.metric("Cheapest hour", price_text(min(prices)))
+    st.metric("Most expensive hour", price_text(max(prices)))
+    if max(prices) >= 100:
+        st.caption("⚡ That's a price spike – wholesale prices jump when the grid is under stress "
+                   "on hot evenings. CoolHead plans around them.")
 
 # ---- COP31 scorecard -----------------------------------------------------------
 st.subheader("🌏 COP31 scorecard")
@@ -138,9 +142,22 @@ if s_usual["Cooling kWh"] == 0:
     st.write("No cooling needed in this period. Try **Replay a real heatwave** or a hotter room type.")
 else:
     saved_cost = s_usual["Cooling cost $"] - s_plan["Cooling cost $"]
+    saved_kwh = s_usual["Cooling kWh"] - s_plan["Cooling kWh"]
     saved_peak = s_usual["Evening-peak kWh"] - s_plan["Evening-peak kWh"]
-    st.write(f"Same safety, **${saved_cost:.2f} cheaper** and **{saved_peak:.1f} kWh less** in the evening peak. "
-             f"Across **10,000** NSW homes that's about **{saved_peak * 10000 / 1000:,.0f} MWh** off the evening peak.")
+    wins = []
+    if saved_cost >= 0.5:
+        wins.append(f"**${saved_cost:.2f} cheaper** ({100 * saved_cost / s_usual['Cooling cost $']:.0f}%)")
+    if saved_kwh >= 0.5:
+        wins.append(f"**{saved_kwh:.1f} kWh less energy** ({100 * saved_kwh / s_usual['Cooling kWh']:.0f}%)")
+    if saved_peak >= 0.5:
+        wins.append(f"**{saved_peak:.1f} kWh less in the 4–9pm peak**")
+    if wins:
+        st.write("Same safety as a normal thermostat, but " + ", ".join(wins) + ".")
+        if saved_kwh >= 0.5:
+            st.write(f"Across **10,000** NSW homes like this, that's about "
+                     f"**{saved_kwh * 10000 / 1000:,.0f} MWh** of cooling energy saved over these days.")
+    else:
+        st.write("Here a normal thermostat does about as well – try a different room type or safe limit.")
 
 # ---- Cool Room Fixes -----------------------------------------------------------
 st.subheader("🔧 Cool Room Fixes – test before you spend")
