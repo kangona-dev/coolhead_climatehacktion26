@@ -75,6 +75,8 @@ def main():
 
     print(f"\nPlace: {label} | {START} to {END} | Room: {ROOM} | Safe band max: {BAND_MAX}°C")
     print(f"Hottest outdoor: {max(out):.1f}°C | Prices: {price_source}\n")
+    if max(out) < 35:
+        print("⚠️  WARNING: this doesn't look like a heatwave. Check the place name and dates above.\n")
     table = pd.DataFrame({k: scorecard(room, temps[k], plans[k], prices, hours, BAND_MAX)
                           for k in plans}).T
     print(table.to_string(), "\n")
@@ -89,12 +91,31 @@ def main():
         cut = 100 * (base_kwh - s2["Cooling kWh"]) / base_kwh if base_kwh else 0
         print(f"  {fix_name:38s} cooling energy -{cut:.0f}%   hours too hot: {s2['Hours too hot']}")
 
+    # Step 8 done for you: the headline numbers for the pitch
+    u, c = table.loc["Usual: thermostat at limit"], table.loc["CoolHead plan"]
+    def pct(a, b):
+        return f"{100 * (a - b) / a:.0f}%" if a else "n/a"
+    print("\n========== PITCH NUMBERS (CoolHead vs a normal thermostat) ==========")
+    print(f"  Both keep the room safe:  hours too hot {u['Hours too hot']:.0f} (thermostat) vs {c['Hours too hot']:.0f} (CoolHead)")
+    print(f"  Cooling cost:      ${u['Cooling cost $']:.2f} -> ${c['Cooling cost $']:.2f}   "
+          f"saved ${u['Cooling cost $'] - c['Cooling cost $']:.2f} ({pct(u['Cooling cost $'], c['Cooling cost $'])})")
+    print(f"  Evening-peak kWh:  {u['Evening-peak kWh']:.1f} -> {c['Evening-peak kWh']:.1f}   "
+          f"cut {u['Evening-peak kWh'] - c['Evening-peak kWh']:.1f} kWh ({pct(u['Evening-peak kWh'], c['Evening-peak kWh'])})")
+    print(f"  Solar-hours share: {u['Solar-hours share %']:.0f}% -> {c['Solar-hours share %']:.0f}%   "
+          f"(+{c['Solar-hours share %'] - u['Solar-hours share %']:.0f} points)")
+    peak_mwh = (u['Evening-peak kWh'] - c['Evening-peak kWh']) * 10000 / 1000
+    print(f"  Scaled up: 10,000 homes like this = {peak_mwh:,.0f} MWh off the evening peak over these {len(out) // 24} days")
+    print("  Cool Room Fixes savings: see the list just above")
+    print("=====================================================================")
+
     print("\nSample carer text:")
     print(" ", carer_message("Dad", ROOM, temps["No air-con"], plans["CoolHead plan"],
                              prices, hours, BAND_MAX))
 
     # Chart
-    os.makedirs("outputs", exist_ok=True)
+    out_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "outputs")
+    os.makedirs(out_dir, exist_ok=True)
+    slug = "demo" if "--demo" in sys.argv else ROOM.split()[0].lower()   # e.g. "fibro"
     fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(11, 7), sharex=True,
                                    gridspec_kw={"height_ratios": [3, 1]})
     ax1.plot(w["time"], out, color="#bbbbbb", label="Outdoor")
@@ -115,9 +136,14 @@ def main():
     ax2.set_ylabel("c/kWh")
     ax2.legend(fontsize=8)
     fig.tight_layout()
-    fig.savefig("outputs/backtest_chart.png", dpi=150)
-    table.to_csv("outputs/scorecard.csv")
-    print("\nSaved outputs/backtest_chart.png and outputs/scorecard.csv")
+    chart_path = os.path.join(out_dir, f"chart_{slug}.png")
+    csv_path = os.path.join(out_dir, f"scorecard_{slug}.csv")
+    try:
+        fig.savefig(chart_path, dpi=150)
+        table.to_csv(csv_path)
+        print(f"\nSaved {chart_path}\n  and {csv_path}")
+    except OSError as e:
+        print(f"\nCouldn't save the chart ({e}). If the picture is open in another app, close it and run again.")
 
 
 if __name__ == "__main__":

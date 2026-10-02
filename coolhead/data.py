@@ -37,11 +37,15 @@ def _cached_json(name, url, params):
 
 
 def find_place(name):
-    """'Penrith' -> (latitude, longitude, nice name)"""
-    data = _cached_json(f"place_{name.lower().replace(' ', '_')}.json",
+    """'Penrith' -> (latitude, longitude, nice name). Australian places only."""
+    data = _cached_json(f"place_au_{name.lower().replace(' ', '_')}.json",
                         "https://geocoding-api.open-meteo.com/v1/search",
-                        {"name": name, "count": 1, "country_code": "AU"})
-    p = data["results"][0]
+                        {"name": name, "count": 20, "countryCode": "AU"})
+    places = [p for p in data.get("results", []) if p.get("country_code") == "AU"]
+    if not places:
+        raise ValueError(f"Couldn't find an Australian place called '{name}'")
+    # prefer NSW if there are several with the same name
+    p = next((p for p in places if p.get("admin1") == "New South Wales"), places[0])
     return p["latitude"], p["longitude"], f"{p['name']}, {p.get('admin1', '')}"
 
 
