@@ -9,7 +9,7 @@ import streamlit as st
 
 from coolhead.model import (ROOM_PRESETS, FIXES, simulate, plan_thermostat,
                             plan_coolhead, scorecard, carer_message,
-                            example_tou_price, cooling_blocks)
+                            tou_price, TARIFF_NAME, cooling_blocks)
 from coolhead.charts import room_chart
 from coolhead import data, ui
 
@@ -58,13 +58,13 @@ try:
             w["price_c"] = w["price_c"].ffill().bfill()
             price_note = "real NSW electricity prices from that week"
         except Exception:
-            w["price_c"] = [example_tou_price(t.hour) for t in w["time"]]
-            price_note = "an example time-of-use tariff"
+            w["price_c"] = [tou_price(t) for t in w["time"]]
+            price_note = TARIFF_NAME
         period = "during the real 3–5 January 2020 heatwave"
     else:
         w = data.forecast(lat, lon, days=2)
-        w["price_c"] = [example_tou_price(t.hour) for t in w["time"]]
-        price_note = "an example time-of-use tariff"
+        w["price_c"] = [tou_price(t) for t in w["time"]]
+        price_note = TARIFF_NAME
         period = "over the next 48 hours"
 except Exception as e:
     st.error(f"Couldn't find weather for “{place}”. Check the suburb spelling, then try again. ({e})")
@@ -155,4 +155,5 @@ with st.expander("Full comparison"):
                  "of cooling energy saved over these days.")
 
 st.caption("Room temperatures are estimates from a simple room simulation, not sensor readings. "
-           "Weather: Open-Meteo. Prices: AEMO NSW wholesale + 25c/kWh, or an example time-of-use tariff.")
+           "Weather: Open-Meteo. Prices: AEMO NSW wholesale + 25c/kWh (heatwave replay), or "
+           f"{TARIFF_NAME}: 46.6c peak 4–8pm weekdays, 12.3c solar soak 10am–2pm, 35.7c other times.")

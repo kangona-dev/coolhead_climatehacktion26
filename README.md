@@ -1,4 +1,4 @@
-# CoolHead
+# CoolHead – step-by-step guide (for total beginners)
 
 > Every heat app tells you the temperature. **CoolHead simulates your room** and plans cooling
 > around your **brain-safe range**, at the cheapest, cleanest hour.
@@ -22,7 +22,7 @@ No sensor needed. CoolHead uses free public weather and electricity-price data.
 
 ---
 
-## PART A – Set up your laptop
+## PART A – Set up your laptop (≈30 min, do this first)
 
 ### Step 1. Install Python
 1. Go to **python.org/downloads** and download the latest Python 3.
@@ -81,7 +81,7 @@ py backtest.py
 This downloads the real Penrith weather for 3–5 January 2020 and real NSW electricity prices.
 - Check that the hottest outdoor temperature printed is close to 48–49°C. If not, change the
   `START`/`END` dates at the top of `backtest.py`.
-- If it says "Couldn't get AEMO prices", it falls back to an example tariff. That's OK, but say so in the pitch.
+- If it says "Couldn't get AEMO prices", it falls back to the time-of-use tariff. That's OK, but say so in the pitch.
   You can also download the file by hand from AEMO's "Aggregated price and demand data" page
   (NSW, January 2020) and put it in the `data/` folder with its original name.
 
@@ -124,7 +124,7 @@ adding teammates, the daily pull → commit → push loop, and deploying the liv
 | Person | Job |
 |---|---|
 | Data & model | Steps 6–8. Try different heatwaves and suburbs. Tune the room presets in `ROOM_PRESETS` so they feel realistic, and write down why. |
-| Planner & prices | Replace `example_tou_price` in `model.py` with a **real** NSW retailer time-of-use tariff and cite it in `DISCLOSURES.md`. |
+| Planner & prices | ✅ Done: real NSW tariff (Origin Energy, Endeavour zone, July 2026) in `tou_price()` in `model.py`, cited in `DISCLOSURES.md`. |
 | App | Steps 9–10. Make the app look good: larger text, clearer labels, maybe a translated carer message. |
 | Kangona (story) | Persona, interviews, evidence for the heat–brain-health link (with citations), the video and the written submission. |
 

@@ -160,7 +160,7 @@ def _tidy(room, outdoor, sun, prices, band_max, ac_on, look_back):
 
 TOLERANCE = 0.5            # °C over the limit before an hour counts as 'too hot'
 PEAK_HOURS = range(16, 21)    # 4pm-9pm evening peak
-SOLAR_HOURS = range(10, 15)   # 10am-3pm solar soak
+SOLAR_HOURS = range(10, 14)   # 10am-2pm solar soak (matches the tariff)
 
 
 def scorecard(room, temps, ac_on, prices, hours_of_day, band_max):
@@ -232,11 +232,30 @@ def cooling_blocks(times, ac_on, prices, max_gap=1):
     return blocks
 
 
-# Example time-of-use tariff (c/kWh). REPLACE with a real NSW retailer tariff
-# and cite it. Hours 15-20 peak, 7-14 & 21-21 shoulder, rest off-peak.
-def example_tou_price(hour):
-    if 15 <= hour < 21:
-        return 55.0
-    if 7 <= hour < 15 or hour == 21:
-        return 30.0
-    return 20.0
+# Real NSW time-of-use tariff (c/kWh, incl. GST).
+# Source: Origin Energy, "Domestic time-of-use", residential standing offer,
+# Endeavour Energy distribution zone (covers Penrith / Western Sydney),
+# prices effective 1 July 2026. See DISCLOSURES.md for the link.
+TARIFF_NAME = "Origin Energy time-of-use, Endeavour zone (July 2026)"
+TOU_PEAK_SUMMER = 46.5718     # 4-8pm business days, 1 Nov - 31 Mar
+TOU_PEAK_WINTER = 47.1372     # 4-8pm business days, 1 Apr - 31 Oct
+TOU_SOLAR_SOAK = 12.3475      # 10am-2pm every day
+TOU_OFF_PEAK = 35.6906        # all other times
+TOU_SUPPLY_PER_DAY = 185.1344 # daily supply charge (not used: it doesn't change with cooling)
+
+
+def tou_price(when):
+    """Price in c/kWh for one hour. `when` is a datetime (preferred) or an hour 0-23.
+    Public holidays are treated as business days (a simplification)."""
+    if isinstance(when, int):
+        hour, business_day, month = when, True, 1   # plain hour: assume a summer weekday
+    else:
+        hour, business_day, month = when.hour, when.weekday() < 5, when.month
+    if 16 <= hour < 20 and business_day:
+        return TOU_PEAK_SUMMER if month in (11, 12, 1, 2, 3) else TOU_PEAK_WINTER
+    if 10 <= hour < 14:
+        return TOU_SOLAR_SOAK
+    return TOU_OFF_PEAK
+
+
+example_tou_price = tou_price   # old name, kept so older code still works

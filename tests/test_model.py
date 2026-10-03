@@ -6,11 +6,11 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from coolhead.model import (ROOM_PRESETS, FIXES, simulate, plan_thermostat,
-                            plan_coolhead, scorecard, example_tou_price, TOLERANCE)
+                            plan_coolhead, scorecard, tou_price, TOLERANCE)
 
 HOT_DAY_OUT = [24] * 8 + [28, 32, 36, 40, 43, 45, 46, 45, 42, 38, 34, 31, 29, 27, 26, 25]
 HOT_DAY_SUN = [0] * 7 + [200, 400, 600, 800, 900, 1000, 900, 800, 600, 400, 200, 50] + [0] * 5
-PRICES = [example_tou_price(h) for h in range(24)]
+PRICES = [tou_price(h) for h in range(24)]
 ROOM = ROOM_PRESETS["Fibro / weatherboard"]
 
 
@@ -67,6 +67,15 @@ def test_cooling_blocks_group_hours():
     assert (blocks[0]["start"], blocks[0]["end"], blocks[0]["hours"]) == ("9am", "12pm", 3)
     assert blocks[1]["in_peak"] and not blocks[0]["in_peak"]
 
+
+
+def test_real_tariff_periods():
+    from datetime import datetime
+    assert tou_price(datetime(2026, 1, 6, 17)) == 46.5718   # Tue 5pm, summer peak
+    assert tou_price(datetime(2026, 7, 7, 17)) == 47.1372   # Tue 5pm, winter peak
+    assert tou_price(datetime(2026, 1, 10, 17)) == 35.6906  # Sat 5pm: no peak on weekends
+    assert tou_price(datetime(2026, 1, 10, 11)) == 12.3475  # solar soak, any day
+    assert tou_price(datetime(2026, 1, 6, 22)) == 35.6906   # Tue 10pm, off-peak
 
 
 def test_plan_strip_marks_cooling_and_spikes():
