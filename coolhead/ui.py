@@ -35,8 +35,12 @@ h2 {{ font-size: 1.35rem !important; margin-top: 2rem !important; color: {TEXT};
                          line-height: 1.1; color: {TEXT}; }}
 .ch-house figcaption span {{ color: {MUTED}; font-size: .9rem; }}
 .ch-house figcaption i {{ display: block; width: 44px; height: 5px; border-radius: 3px; margin: .5rem auto .35rem auto; }}
-.ch-limitnote {{ text-align: center; color: {MUTED}; font-size: .85rem; margin-top: .6rem; }}
-.ch-limitnote b {{ color: {TEXT}; }}
+.ch-conds {{ display: grid; grid-template-columns: 1fr 1fr; margin-top: 1rem; padding-top: .9rem;
+             border-top: 1px solid {LINE}; text-align: center; }}
+.ch-cond + .ch-cond {{ border-left: 1px solid {LINE}; }}
+.ch-cond b {{ display: block; font-family: 'Space Grotesk', sans-serif; font-size: 1.7rem; line-height: 1.15; color: {TEXT}; }}
+.ch-cond span {{ color: {MUTED}; font-size: .88rem; }}
+.ch-cond svg {{ width: 18px; height: 18px; vertical-align: -4px; margin-right: .35rem; }}
 [data-testid="stSidebar"] h2, [data-testid="stSidebar"] label p, [data-testid="stSidebar"] .stMarkdown p {{
   font-family: 'IBM Plex Sans', sans-serif; }}
 [data-testid="stSidebar"] h2 {{ font-family: 'Space Grotesk', sans-serif !important; font-size: 1.1rem !important; }}
@@ -77,6 +81,7 @@ h2 {{ font-size: 1.35rem !important; margin-top: 2rem !important; color: {TEXT};
   .ch-hero h1 {{ font-size: 2.1rem; }}
   .ch-stats {{ grid-template-columns: repeat(2, 1fr); }}
   .ch-house figcaption b {{ font-size: 1.8rem; }}
+  .ch-cond b {{ font-size: 1.35rem; }}
   .ch-stat:nth-child(3) {{ border-left: none; padding-left: 0; }}
   .ch-plan {{ grid-template-columns: 58px 1fr; }}
   .ch-day {{ font-size: .78rem; }}
@@ -143,6 +148,14 @@ def house_svg(room_kind, room_temp, hot):
     return f'<svg viewBox="0 0 220 168" role="img" aria-hidden="true">{"".join(parts)}</svg>'
 
 
+SUN_ICON = ('<svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="4" fill="#E89A1C"/>'
+            '<g stroke="#E89A1C" stroke-width="2" stroke-linecap="round">'
+            '<path d="M10 1v2.5M10 16.5V19M1 10h2.5M16.5 10H19M3.6 3.6l1.8 1.8M14.6 14.6l1.8 1.8'
+            'M3.6 16.4l1.8-1.8M14.6 5.4l1.8-1.8"/></g></svg>')
+LIMIT_ICON = ('<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M2 10h16" stroke="#12263A" '
+              'stroke-width="2" stroke-dasharray="3 3"/></svg>')
+
+
 def hero(outdoor_peak, none_peak, plan_peak, band_max, place, period, room_name="Top-floor apartment"):
     """Title + two thermal houses (without / with CoolHead). Opens a panel that outcome_row() closes."""
     kind = "apartment" if "apartment" in room_name.lower() else "house"
@@ -159,13 +172,15 @@ def hero(outdoor_peak, none_peak, plan_peak, band_max, place, period, room_name=
      at cheaper hours before the evening peak. No sensor needed.</p>
 </div>
 <div class="ch-panel">
-  <div class="ch-scene">Their room in <b>{escape(place)}</b>, {escape(period)},
-     when it reached <b>{outdoor_peak:.0f}°C</b> outside</div>
+  <div class="ch-scene">Their room in <b>{escape(place)}</b>, {escape(period)}</div>
   <div class="ch-houses">
     {figure(none_peak, "without cooling", hot=none_peak > band_max + 0.5)}
     {figure(plan_peak, "with CoolHead", hot=plan_peak > band_max + 0.5)}
   </div>
-  <div class="ch-limitnote">Brain-safe limit set by the carer: <b>{band_max:.0f}°C</b></div>
+  <div class="ch-conds">
+    <div class="ch-cond"><b>{outdoor_peak:.0f}°C</b><span>{SUN_ICON}hottest outside</span></div>
+    <div class="ch-cond"><b>{band_max:.0f}°C</b><span>{LIMIT_ICON}brain-safe limit, set by the carer</span></div>
+  </div>
 """
 
 
