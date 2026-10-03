@@ -85,7 +85,7 @@ s_usual = scorecard(room, t_usual, usual, prices, hours, band_max)
 s_plan = scorecard(room, t_plan, plan, prices, hours, band_max)
 
 # ---- Hero: the thermal scale + outcomes -------------------------------------
-show(ui.hero(max(out), max(t_none), max(t_plan), band_max, label, period)
+show(ui.hero(max(out), max(t_none), max(t_plan), band_max, label, period, room_name)
      + ui.outcome_row(s_none, s_usual, s_plan))
 st.caption(f"{room_name}, compared with a normal thermostat set to the same limit. Prices: {price_note}. "
            "COP31 priority: Resilient Cities & Buildings (supporting: Electrification). Not medical advice.")

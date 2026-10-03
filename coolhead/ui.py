@@ -18,7 +18,7 @@ h1, h2, h3, .ch-num {{ font-family: 'Space Grotesk', sans-serif !important; lett
 .block-container {{ padding-top: 2.2rem; max-width: 860px; }}
 h2 {{ font-size: 1.35rem !important; margin-top: 2rem !important; color: {TEXT}; }}
 
-.ch-hero h1 {{ font-size: 2.6rem; margin: 0 0 .2rem 0; color: {TEXT}; }}
+.ch-hero h1 {{ font-size: 3rem; font-weight: 700; margin: 0 0 .2rem 0; color: {TEXT}; }}
 .ch-hero h1 span {{ color: {COOL}; }}
 .ch-hero p {{ color: {MUTED}; font-size: 1.05rem; margin: 0 0 1rem 0; max-width: 62ch; }}
 
@@ -27,20 +27,19 @@ h2 {{ font-size: 1.35rem !important; margin-top: 2rem !important; color: {TEXT};
 .ch-scene {{ color: {MUTED}; font-size: .92rem; margin-bottom: 1.1rem; }}
 .ch-scene b {{ color: {TEXT}; font-weight: 600; }}
 
-/* thermal scale bar: markers sit ON the bar, numbers sit in a row BELOW it (never overlap) */
-.ch-scale {{ position: relative; height: 26px; margin: 0 .5rem; }}
-.ch-bar {{ position: absolute; top: 6px; left: 0; right: 0; height: 14px; border-radius: 7px;
-          background: linear-gradient(90deg, #2B6CB0 0%, #5BC0EB 22%, #3DBF8F 34%, #F2B33D 58%, #E5483D 82%, #A3122F 100%); }}
-.ch-dot {{ position: absolute; top: 2px; width: 22px; height: 22px; margin-left: -11px; border-radius: 50%;
-          background: {PANEL}; border: 4px solid; box-shadow: 0 1px 3px rgba(0,0,0,.25); }}
-.ch-limit {{ position: absolute; top: -4px; height: 34px; border-left: 2px dashed {TEXT}; }}
-.ch-ends {{ display: flex; justify-content: space-between; color: {MUTED}; font-size: .72rem; margin: .3rem .5rem 0 .5rem; }}
-.ch-legend {{ display: grid; grid-template-columns: repeat(4, 1fr); gap: .6rem; margin-top: 1rem; }}
-.ch-leg b {{ display: block; font-family: 'Space Grotesk', sans-serif; font-size: 1.4rem; color: {TEXT}; }}
-.ch-leg span {{ color: {MUTED}; font-size: .82rem; }}
-.ch-leg i {{ display: inline-block; width: 11px; height: 11px; border-radius: 50%; border: 3px solid;
-            margin-right: .35rem; vertical-align: -2px; }}
-.ch-leg i.lim {{ border: none; border-left: 2px dashed {TEXT}; border-radius: 0; width: 2px; height: 14px; margin-right: .5rem; }}
+/* thermal house hero */
+.ch-houses {{ display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin: .2rem 0 .4rem 0; }}
+.ch-house {{ margin: 0; text-align: center; }}
+.ch-house svg {{ width: 100%; max-width: 300px; height: auto; display: block; margin: 0 auto; }}
+.ch-house figcaption b {{ display: block; font-family: 'Space Grotesk', sans-serif; font-size: 2.3rem;
+                         line-height: 1.1; color: {TEXT}; }}
+.ch-house figcaption span {{ color: {MUTED}; font-size: .9rem; }}
+.ch-house figcaption i {{ display: block; width: 44px; height: 5px; border-radius: 3px; margin: .5rem auto .35rem auto; }}
+.ch-limitnote {{ text-align: center; color: {MUTED}; font-size: .85rem; margin-top: .6rem; }}
+.ch-limitnote b {{ color: {TEXT}; }}
+[data-testid="stSidebar"] h2, [data-testid="stSidebar"] label p, [data-testid="stSidebar"] .stMarkdown p {{
+  font-family: 'IBM Plex Sans', sans-serif; }}
+[data-testid="stSidebar"] h2 {{ font-family: 'Space Grotesk', sans-serif !important; font-size: 1.1rem !important; }}
 
 /* outcome row */
 .ch-stats {{ display: grid; grid-template-columns: repeat(4, 1fr); margin-top: 1.1rem; border-top: 1px solid {LINE}; }}
@@ -76,7 +75,8 @@ h2 {{ font-size: 1.35rem !important; margin-top: 2rem !important; color: {TEXT};
 
 @media (max-width: 640px) {{
   .ch-hero h1 {{ font-size: 2.1rem; }}
-  .ch-legend, .ch-stats {{ grid-template-columns: repeat(2, 1fr); }}
+  .ch-stats {{ grid-template-columns: repeat(2, 1fr); }}
+  .ch-house figcaption b {{ font-size: 1.8rem; }}
   .ch-stat:nth-child(3) {{ border-left: none; padding-left: 0; }}
   .ch-plan {{ grid-template-columns: 58px 1fr; }}
   .ch-day {{ font-size: .78rem; }}
@@ -85,23 +85,72 @@ h2 {{ font-size: 1.35rem !important; margin-top: 2rem !important; color: {TEXT};
 </style>
 """
 
-# marker colours on the scale (each also used as its legend swatch)
-M_PLAN, M_NONE, M_OUT = COOL, HEAT, "#7A8A9B"
+# Thermal-camera colours: the same stops as a heat map, from cool blue to deep red.
+THERMAL_STOPS = [(18, (43, 108, 176)), (25, (91, 192, 235)), (29, (61, 191, 143)),
+                 (36, (242, 179, 61)), (44, (229, 72, 61)), (50, (163, 18, 47))]
 
 
-def hero(outdoor_peak, none_peak, plan_peak, band_max, place, period):
-    """Title + thermal scale bar. Opens a panel that outcome_row() closes."""
-    lo = 18.0
-    hi = max(50.0, outdoor_peak + 2, none_peak + 2)
+def thermal_colour(t):
+    """Temperature (°C) -> hex colour on the thermal scale."""
+    if t <= THERMAL_STOPS[0][0]:
+        r, g, b = THERMAL_STOPS[0][1]
+    elif t >= THERMAL_STOPS[-1][0]:
+        r, g, b = THERMAL_STOPS[-1][1]
+    else:
+        for (t0, c0), (t1, c1) in zip(THERMAL_STOPS, THERMAL_STOPS[1:]):
+            if t0 <= t <= t1:
+                f = (t - t0) / (t1 - t0)
+                r, g, b = (round(a + (bb - a) * f) for a, bb in zip(c0, c1))
+                break
+    return f"#{r:02X}{g:02X}{b:02X}"
 
-    def pos(t):
-        return max(0.0, min(100.0, 100 * (t - lo) / (hi - lo)))
 
-    def dot(t, colour):
-        return f'<div class="ch-dot" style="left:{pos(t):.1f}%;border-color:{colour}"></div>'
+def house_svg(room_kind, room_temp, hot):
+    """A building cross-section. The person's room is filled with its thermal colour.
+    room_kind: 'apartment' (top floor of a block) or 'house'. hot: draw heat shimmer."""
+    fill = thermal_colour(room_temp)
+    wall, frame, pale, win = "#F4F7FA", "#5B6F84", "#E3EAF2", "#FFFFFF"
+    parts = [f'<line x1="10" y1="160" x2="210" y2="160" stroke="{frame}" stroke-width="2"/>']
+    if room_kind == "apartment":
+        room_top = 48
+        parts.append(f'<rect x="48" y="40" width="124" height="8" rx="2" fill="{frame}"/>')
+        parts.append(f'<rect x="52" y="48" width="116" height="112" fill="{wall}" stroke="{frame}" stroke-width="2"/>')
+        for y in (86, 123):                       # the two floors below
+            parts.append(f'<line x1="52" y1="{y}" x2="168" y2="{y}" stroke="{frame}" stroke-width="2"/>')
+            for x in (66, 98, 130):
+                parts.append(f'<rect x="{x}" y="{y + 9}" width="22" height="18" rx="2" fill="{pale}"/>')
+        room = (54, 50, 112, 35)
+    else:
+        room_top = 88
+        parts.append(f'<polygon points="38,88 110,34 182,88" fill="{wall}" stroke="{frame}" stroke-width="2" stroke-linejoin="round"/>')
+        parts.append(f'<rect x="52" y="88" width="116" height="72" fill="{wall}" stroke="{frame}" stroke-width="2"/>')
+        room = (54, 90, 112, 68)
+    x, y, w, h = room
+    gid = f"g{abs(hash((room_kind, round(room_temp, 1), hot))) % 10**6}"
+    parts.append(f'<defs><radialGradient id="{gid}" cx="50%" cy="55%" r="70%">'
+                 f'<stop offset="0%" stop-color="{fill}" stop-opacity="1"/>'
+                 f'<stop offset="100%" stop-color="{fill}" stop-opacity=".72"/></radialGradient></defs>')
+    parts.append(f'<rect x="{x}" y="{y}" width="{w}" height="{h}" fill="url(#{gid})"/>')
+    # a window and a simple bed so it reads as someone's room
+    parts.append(f'<rect x="{x + 10}" y="{y + 8}" width="24" height="17" rx="2" fill="{win}" fill-opacity=".55"/>')
+    parts.append(f'<rect x="{x + w - 46}" y="{y + h - 13}" width="36" height="9" rx="2" fill="{win}" fill-opacity=".55"/>')
+    parts.append(f'<rect x="{x + w - 46}" y="{y + h - 19}" width="9" height="7" rx="2" fill="{win}" fill-opacity=".55"/>')
+    if hot:
+        for hx in (82, 110, 138):
+            top = room_top - (8 if room_kind == "apartment" else 50)
+            parts.append(f'<path d="M{hx} {top} q -6 -7 0 -14 t 0 -14" fill="none" stroke="{fill}" '
+                         f'stroke-width="3" stroke-linecap="round" opacity=".75"/>')
+    return f'<svg viewBox="0 0 220 168" role="img" aria-hidden="true">{"".join(parts)}</svg>'
 
-    def leg(t, label, swatch):
-        return f'<div class="ch-leg"><b>{t:.0f}°C</b><span>{swatch}{escape(label)}</span></div>'
+
+def hero(outdoor_peak, none_peak, plan_peak, band_max, place, period, room_name="Top-floor apartment"):
+    """Title + two thermal houses (without / with CoolHead). Opens a panel that outcome_row() closes."""
+    kind = "apartment" if "apartment" in room_name.lower() else "house"
+
+    def figure(temp, caption, hot):
+        return (f'<figure class="ch-house">{house_svg(kind, temp, hot)}'
+                f'<figcaption><i style="background:{thermal_colour(temp)}"></i>'
+                f'<b>{temp:.0f}°C</b><span>{escape(caption)}</span></figcaption></figure>')
 
     return f"""
 <div class="ch-hero">
@@ -110,21 +159,13 @@ def hero(outdoor_peak, none_peak, plan_peak, band_max, place, period):
      at cheaper hours before the evening peak. No sensor needed.</p>
 </div>
 <div class="ch-panel">
-  <div class="ch-scene">Hottest temperatures in <b>{escape(place)}</b>, {escape(period)}</div>
-  <div class="ch-scale">
-    <div class="ch-bar"></div>
-    <div class="ch-limit" style="left:{pos(band_max):.1f}%"></div>
-    {dot(outdoor_peak, M_OUT)}
-    {dot(none_peak, M_NONE)}
-    {dot(plan_peak, M_PLAN)}
+  <div class="ch-scene">Their room in <b>{escape(place)}</b>, {escape(period)},
+     when it reached <b>{outdoor_peak:.0f}°C</b> outside</div>
+  <div class="ch-houses">
+    {figure(none_peak, "without cooling", hot=none_peak > band_max + 0.5)}
+    {figure(plan_peak, "with CoolHead", hot=plan_peak > band_max + 0.5)}
   </div>
-  <div class="ch-ends"><span>{lo:.0f}°C</span><span>{hi:.0f}°C</span></div>
-  <div class="ch-legend">
-    {leg(plan_peak, "room with CoolHead", f'<i style="border-color:{M_PLAN}"></i>')}
-    {leg(band_max, "brain-safe limit", '<i class="lim"></i>')}
-    {leg(none_peak, "room without cooling", f'<i style="border-color:{M_NONE}"></i>')}
-    {leg(outdoor_peak, "outdoors", f'<i style="border-color:{M_OUT}"></i>')}
-  </div>
+  <div class="ch-limitnote">Brain-safe limit set by the carer: <b>{band_max:.0f}°C</b></div>
 """
 
 
