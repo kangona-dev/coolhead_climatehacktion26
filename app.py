@@ -38,8 +38,18 @@ with st.sidebar:
     place = st.text_input("Suburb", "Penrith")
     profile = st.selectbox("Profile", list(PROFILES))
     band_max = st.slider("Brain-safe upper limit (°C)", 22, 32, PROFILES[profile])
-    st.caption("Set this with their GP or pharmacist. "
-               "[NSW Health: beat the heat](https://www.health.nsw.gov.au/environment/beattheheat)")
+    st.markdown(
+        """
+        <div style="background:#FFF4E0; border-left:4px solid #E89A1C;
+                    border-radius:8px; padding:10px 12px; margin-top:4px;
+                    color:#12263A; font-size:15px; line-height:1.4;">
+        <b>Set this with their GP or pharmacist.</b><br>
+        <a href="https://www.health.nsw.gov.au/environment/beattheheat"
+           target="_blank" style="color:#1B8CC4;">NSW Health: beat the heat</a>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
     st.header("Their room")
     room_name = st.selectbox("Room type", list(ROOM_PRESETS),
                              index=list(ROOM_PRESETS).index("Top-floor apartment"))
