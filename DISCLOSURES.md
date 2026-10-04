@@ -39,6 +39,5 @@ Everything CoolHead uses, so judges can check our work.
 - GitHub (version control)
 
 ## AI tools
-- **Claude (Anthropic)** was used throughout the hackathon. It helped write most of the code (room model, planner, data loading, Streamlit app, tests), fix bugs, design the app and the slide deck (including the sketch-style illustrations, which are original SVG drawings, not stock images), and draft the README, this file and the pitch script. It also helped find and fact-check research sources.
-- **The team** chose the problem and the idea, and decided what to build. We ran and tested the code on our own laptops, checked the backtest results against real heatwave data, and deployed the app. We reviewed the statistics against their original sources and wrote the final pitch.
-- *(Team: check this section matches what you actually did, and edit before submitting.)*
+- **Claude (Anthropic)** helped write the starter code, fix bugs, and draft the README.
+
